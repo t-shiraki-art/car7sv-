@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAR7 SV-Assist</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;font-size:13px}
+.app{max-width:720px;margin:0 auto;background:#fff;min-height:100vh;display:flex;flex-direction:column;box-shadow:0 0 30px rgba(0,0,0,.08)}
+.hdr{background:#1a2340;color:#fff;padding:12px 18px}
+.hdr-logo{font-size:17px;font-weight:600}
+.hdr-sub{font-size:11px;opacity:.65;margin-top:2px}
+.tabs{display:flex;border-bottom:1px solid #e0e4ef;background:#fff;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 16px;font-size:13px;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;user-select:none}
+.tab.on{color:#1a2340;border-bottom-color:#e8820c;font-weight:600}
+.tab:hover:not(.on){color:#1a2340;background:#f8f9fb}
+.pane{display:none;padding:18px}
+.pane.on{display:block}
+@media(max-width:600px){.pane{padding:14px 14px 80px}.bnav{display:flex!important}.tabs{display:none}}
+.ptitle{font-size:15px;font-weight:600;color:#1a2340;margin-bottom:14px}
+/* KPI */
+.pbtn-kpi{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:#1a2340;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;text-decoration:none}
+.kpi-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.kpi-info{background:#f8f9fb;border:1px solid #e0e4ef;border-radius:8px;padding:14px;text-align:center}
+.kpi-info-icon{font-size:20px;margin-bottom:6px}
+.kpi-info-title{font-size:12px;font-weight:600;color:#1a2340;margin-bottom:3px}
+.kpi-info-desc{font-size:11px;color:#6b7280;line-height:1.5}
+.kpi-tag{display:inline-block;padding:4px 10px;background:#e8f0fe;color:#1a2340;border-radius:20px;font-size:11px;font-weight:500;margin:3px}
+/* CARD */
+.card{background:#fff;border:1px solid #e0e4ef;border-radius:10px;padding:16px;margin-bottom:14px}
+.ctitle{font-size:12px;font-weight:600;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between;align-items:center}
+/* AI CHAT */
+.qbtns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.qbtn{font-size:11px;padding:4px 11px;border:1px solid #d1d5db;border-radius:20px;background:#fff;color:#6b7280;cursor:pointer}
+.qbtn:hover{border-color:#e8820c;color:#e8820c;background:#fff8f0}
+.msgs{min-height:280px;max-height:360px;overflow-y:auto;padding:14px;background:#f8f9fb;border:1px solid #e0e4ef;border-radius:8px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%}.msg.u{align-self:flex-end}.msg.b{align-self:flex-start}
+.bubble{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.msg.u .bubble{background:#1a2340;color:#fff;border-bottom-right-radius:3px}
+.msg.b .bubble{background:#fff;border:1px solid #e0e4ef;color:#1a2340;border-bottom-left-radius:3px}
+.msender{font-size:10px;color:#9ca3af;margin-bottom:3px}.msg.u .msender{text-align:right}
+.cinput{display:flex;gap:8px}
+.cinput input{flex:1;padding:9px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#1a1a2e;outline:none}
+.cinput input:focus{border-color:#1a2340}
+.cinput button{padding:9px 18px;background:#e8820c;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500}
+.dots{display:flex;gap:4px;align-items:center;padding:4px 0}
+.dots span{width:6px;height:6px;background:#9ca3af;border-radius:50%;animation:bounce 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+/* CHECKLIST */
+.cl{display:flex;flex-direction:column;gap:5px}
+.ci{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;background:#f8f9fb;border:1px solid #e0e4ef;border-radius:8px;cursor:pointer}
+.ci:hover{border-color:#1a2340}
+.ci input[type=checkbox]{width:15px;height:15px;flex-shrink:0;margin-top:1px;accent-color:#e8820c;cursor:pointer}
+.ci span{font-size:12px;color:#374151;line-height:1.5}
+.ci.done{background:#f0faf5;border-color:#bbf7d0}
+.ci.done span{text-decoration:line-through;color:#9ca3af}
+.pbar-wrap{height:5px;background:#e0e4ef;border-radius:3px;margin-top:10px}
+.pbar{height:100%;background:#3dba7e;border-radius:3px;transition:width .25s}
+.plabel{font-size:11px;color:#9ca3af;margin-top:4px}
+.cksummary{font-size:13px;color:#6b7280;margin-top:6px;padding:10px 14px;background:#f8f9fb;border-radius:8px;border:1px solid #e0e4ef}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.bok{background:#f0faf5;color:#065f46;border:1px solid #bbf7d0}
+.bwarn{background:#fff5f5;color:#991b1b;border:1px solid #fecaca}
+.bneu{background:#f8f9fb;color:#6b7280;border:1px solid #e0e4ef}
+/* HISTORY */
+.savebar{display:flex;gap:8px;margin-bottom:12px}
+.savebar input{flex:1;padding:8px 11px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#1a1a2e;outline:none}
+.sbtn{padding:8px 16px;background:#e8820c;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.mcard{background:#f8f9fb;border:1px solid #e0e4ef;border-radius:8px;padding:11px 13px}
+.mlabel{font-size:11px;color:#6b7280;margin-bottom:3px}
+.mval{font-size:20px;font-weight:600;color:#1a2340}
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:120px;padding:7px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#1a1a2e;outline:none}
+.toolbar select{padding:7px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#1a1a2e}
+.hlist{display:flex;flex-direction:column;gap:8px}
+.hcard{background:#fff;border:1px solid #e0e4ef;border-radius:10px;padding:13px 15px;cursor:pointer}
+.hcard:hover{border-color:#1a2340;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.hcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.hcard-name{font-size:14px;font-weight:600;color:#1a2340}
+.hcard-date{font-size:11px;color:#9ca3af}
+.pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.pill{font-size:11px;padding:2px 9px;border-radius:10px;font-weight:500}
+.pill.g{background:#f0faf5;color:#065f46;border:1px solid #bbf7d0}
+.pill.m{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.pill.r{background:#fff5f5;color:#991b1b;border:1px solid #fecaca}
+.hcard-foot{display:flex;justify-content:space-between;align-items:center}
+.hcard-total{font-size:12px;color:#6b7280}
+.obtn{padding:4px 11px;background:transparent;color:#1a2340;border:1px solid #1a2340;border-radius:7px;font-size:12px;cursor:pointer}
+.obtn:hover{background:#1a2340;color:#fff}
+.dempty{text-align:center;padding:40px 16px;color:#9ca3af;font-size:13px}
+.dpanel{margin-top:10px;border:2px solid #1a2340;border-radius:10px;padding:16px;background:#fff;display:none}
+.dpanel.on{display:block}
+.dpanel-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.dpanel-title{font-size:14px;font-weight:600;color:#1a2340}
+.xbtn{background:none;border:none;font-size:20px;color:#9ca3af;cursor:pointer;line-height:1}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.dcell{background:#f8f9fb;border-radius:8px;padding:10px 12px}
+.dcell-lbl{font-size:11px;color:#6b7280;margin-bottom:3px}
+.dcell-val{font-size:15px;font-weight:600;color:#1a2340}
+.dlabel{font-size:11px;color:#6b7280;margin-top:10px;margin-bottom:4px;font-weight:600}
+.dtext{background:#f8f9fb;border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.7;color:#374151}
+.dbtn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.dbtn-load{padding:7px 13px;background:transparent;color:#1a2340;border:1px solid #1a2340;border-radius:8px;font-size:12px;cursor:pointer}
+.dbtn-del{padding:7px 13px;background:transparent;color:#9ca3af;border:1px solid #e0e4ef;border-radius:8px;font-size:12px;cursor:pointer}
+.dbtn-del:hover{color:#e84040;border-color:#e84040}
+.share-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:#f8f9fb;border:1px solid #e0e4ef;border-radius:8px;font-size:12px;color:#6b7280;cursor:pointer;margin-bottom:10px;width:100%;justify-content:center}
+.share-btn:hover{border-color:#1a2340;color:#1a2340}
+/* REPORT */
+.note{font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.6;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px}
+.fgrp{margin-bottom:12px}
+.fgrp label{display:block;font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.fgrp input,.fgrp select,.fgrp textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#1a1a2e;font-family:inherit;outline:none}
+.fgrp textarea{resize:vertical;min-height:68px;line-height:1.5}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:500px){.frow,.frow3{grid-template-columns:1fr}}
+.synclnk{font-size:11px;padding:3px 9px;border:1px solid #1a2340;color:#1a2340;background:#f0f4ff;border-radius:20px;cursor:pointer}
+.pbtn{width:100%;padding:12px;background:#1a2340;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.pbtn:hover{background:#243060}
+.rstat{margin-top:12px;padding:12px 14px;border-radius:8px;font-size:13px;display:none;line-height:1.8}
+.rstat.ok{display:block;background:#f0faf5;border:1px solid #bbf7d0;color:#065f46}
+.rstat.er{display:block;background:#fff5f5;border:1px solid #fecaca;color:#991b1b}
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:58px;background:#fff;border-top:1px solid #e0e4ef;display:none;align-items:stretch;z-index:50}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:#9ca3af;font-size:10px;user-select:none}
+.bnav-item.on{color:#e8820c}
+.bnav-icon{font-size:18px;line-height:1}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="hdr">
+  <div>
+    <div class="hdr-logo">CAR7 SV-Assist</div>
+    <div class="hdr-sub">スーパーバイザー支援システム ｜ マニュアル搭載</div>
+  </div>
+</div>
+<div class="tabs" id="tabs">
+  <div class="tab on" data-pane="kpi">KPIダッシュボード</div>
+  <div class="tab" data-pane="ai">AIアシスタント</div>
+  <div class="tab" data-pane="check">臨店チェック</div>
+  <div class="tab" data-pane="history">臨店履歴</div>
+  <div class="tab" data-pane="report">レポート出力</div>
+</div>
+
+<!-- KPI -->
+<div class="pane on" id="pane-kpi">
+  <div class="ptitle">KPIダッシュボード</div>
+  <a class="pbtn-kpi" href="https://script.google.com/macros/s/AKfycbyACWoy6bKIfs1zPH-JRguk2d9Tylk_llf4DvttBO49e9OruffgOD9N2holcDvlsMEczw/exec" target="_blank">
+    📊 ダッシュボードを開く（新しいタブ）
+  </a>
+  <div class="kpi-cards">
+    <div class="kpi-info"><div class="kpi-info-icon">🏪</div><div class="kpi-info-title">店舗別表示</div><div class="kpi-info-desc">28_高・松・中・小<br>各店舗を切り替え</div></div>
+    <div class="kpi-info"><div class="kpi-info-icon">📈</div><div class="kpi-info-title">KPI＋グラフ</div><div class="kpi-info-desc">棒グラフ（今期）<br>折れ線（前年）</div></div>
+    <div class="kpi-info"><div class="kpi-info-icon">🔄</div><div class="kpi-info-title">自動更新</div><div class="kpi-info-desc">毎深夜0時に<br>スプレッドシート同期</div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">表示KPI項目</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+      <span class="kpi-tag">査定件数</span><span class="kpi-tag">買取台数</span><span class="kpi-tag">買取成約率</span>
+      <span class="kpi-tag">小売接客件数</span><span class="kpi-tag">小売販売台数</span><span class="kpi-tag">小売成約率</span>
+      <span class="kpi-tag">売上総利益</span><span class="kpi-tag">業販総粗利</span>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;line-height:1.6">各KPIに前年比・前月比・月平均・前年実績を表示。月別推移テーブルも確認できます。</div>
+  </div>
+</div>
+
+<!-- AI -->
+<div class="pane" id="pane-ai">
+  <div class="ptitle">AIナレッジ・アシスタント</div>
+  <div class="qbtns" id="qbtns"></div>
+  <div class="msgs" id="msgs">
+    <div class="msg b">
+      <div class="msender">SV-Assist AI</div>
+      <div class="bubble">カーセブン スーパーバイザー業務マニュアルに基づいてご支援します。指導方法・話法・KPI改善など、何でもお聞きください。</div>
+    </div>
+  </div>
+  <div class="cinput">
+    <input type="text" id="cinput" placeholder="マニュアルについて質問する...">
+    <button id="csend">送信</button>
+  </div>
+</div>
+
+<!-- CHECK -->
+<div class="pane" id="pane-check">
+  <div class="ptitle">臨店チェックシート</div>
+  <div class="card"><div class="ctitle">店舗外観・環境</div><div class="cl" id="cl-ext"></div><div class="pbar-wrap"><div class="pbar" id="pb-ext" style="width:0%"></div></div><div class="plabel" id="pl-ext">0 / 6 完了</div></div>
+  <div class="card"><div class="ctitle">WEB掲載品質</div><div class="cl" id="cl-web"></div><div class="pbar-wrap"><div class="pbar" id="pb-web" style="width:0%"></div></div><div class="plabel" id="pl-web">0 / 5 完了</div></div>
+  <div class="card"><div class="ctitle">安心宣言・JPUC説明</div><div class="cl" id="cl-ans"></div><div class="pbar-wrap"><div class="pbar" id="pb-ans" style="width:0%"></div></div><div class="plabel" id="pl-ans">0 / 5 完了</div></div>
+  <div class="cksummary" id="cksummary"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="pane" id="pane-history">
+  <div class="ptitle">臨店履歴</div>
+  <div class="savebar">
+    <input type="text" id="h_store" placeholder="店舗名を入力して現在のチェックを保存">
+    <button class="sbtn" id="h_savebtn">保存</button>
+  </div>
+  <div class="sgrid" id="h_stats"></div>
+  <div class="toolbar">
+    <input type="text" id="h_search" placeholder="店舗名で絞り込み...">
+    <select id="h_sort">
+      <option value="new">新しい順</option><option value="old">古い順</option>
+      <option value="shi">スコア高い順</option><option value="slo">スコア低い順</option>
+      <option value="abc">店舗名順</option>
+    </select>
+  </div>
+  <div class="hlist" id="h_list"></div>
+  <div class="dpanel" id="h_detail">
+    <div class="dpanel-hdr"><div class="dpanel-title" id="h_dtitle"></div><button class="xbtn" id="h_xbtn">×</button></div>
+    <div id="h_dbody"></div>
+    <div class="dbtn-row">
+      <button class="dbtn-load" id="h_loadbtn">チェックリストに読み込む</button>
+      <button class="dbtn-del" id="h_delbtn">この記録を削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT -->
+<div class="pane" id="pane-report">
+  <div class="ptitle">臨店指導報告書 出力</div>
+  <p class="note">入力後「報告書フォームを開く」でGAS報告書ページへ。Gmailで送信されスプレッドシートにも記録されます。</p>
+  <div class="card">
+    <div class="ctitle">基本情報</div>
+    <div class="frow">
+      <div class="fgrp"><label>店舗名</label><input type="text" id="r_store" placeholder="カーセブン〇〇店"></div>
+      <div class="fgrp"><label>担当SV名</label><input type="text" id="r_sv" placeholder="氏名"></div>
+    </div>
+    <div class="frow">
+      <div class="fgrp"><label>臨店日</label><input type="date" id="r_date"></div>
+      <div class="fgrp"><label>次回訪問予定日</label><input type="date" id="r_next"></div>
+    </div>
+    <div class="fgrp"><label>SVパッケージ</label>
+      <select id="r_pkg"><option>ベーシック（1ヶ月に1回）</option><option selected>スタンダード（3ヶ月に1回）</option><option>プレミアム（6ヶ月に1回）</option></select>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">チェックシートスコア <span class="synclnk" id="r_synccl">↓ チェックリストから同期</span></div>
+    <div class="frow3">
+      <div class="fgrp"><label>店舗外観（/6）</label><input type="number" id="r_ext" placeholder="0" min="0" max="6"></div>
+      <div class="fgrp"><label>WEB掲載（/5）</label><input type="number" id="r_web" placeholder="0" min="0" max="5"></div>
+      <div class="fgrp"><label>安心宣言（/5）</label><input type="number" id="r_ans" placeholder="0" min="0" max="5"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">指導内容・所見</div>
+    <div class="fgrp"><label>本日の指導内容</label><textarea id="r_guid" placeholder="実施した指導・ロールプレイング内容など"></textarea></div>
+    <div class="fgrp"><label>発見した課題・問題点</label><textarea id="r_iss" placeholder="改善が必要な項目を箇条書きで"></textarea></div>
+    <div class="fgrp"><label>改善アクションプラン</label><textarea id="r_act" placeholder="【1週間以内】〇〇"></textarea></div>
+    <div class="fgrp"><label>SV総合所見</label><textarea id="r_over" placeholder="店舗の総合評価・今後の見通し"></textarea></div>
+  </div>
+  <button class="pbtn" id="r_genbtn">📋 報告書フォームを開く</button>
+  <div class="rstat" id="r_stat"></div>
+</div>
+
+</div><!-- /app -->
+
+<nav class="bnav" id="bnav">
+  <div class="bnav-item on" data-pane="kpi"><div class="bnav-icon">📊</div>KPI</div>
+  <div class="bnav-item" data-pane="ai"><div class="bnav-icon">🤖</div>AI</div>
+  <div class="bnav-item" data-pane="check"><div class="bnav-icon">✅</div>チェック</div>
+  <div class="bnav-item" data-pane="history"><div class="bnav-icon">📋</div>履歴</div>
+  <div class="bnav-item" data-pane="report"><div class="bnav-icon">📄</div>レポート</div>
+</nav>
+
+<script>
+(function(){
+var GAS_URL='https://script.google.com/macros/s/AKfycbyACWoy6bKIfs1zPH-JRguk2d9Tylk_llf4DvttBO49e9OruffgOD9N2holcDvlsMEczw/exec';
+
+// ── NAV ──
+function switchPane(p){
+  document.querySelectorAll('.tab,.bnav-item').forEach(function(x){x.classList.remove('on');});
+  document.querySelectorAll('.pane').forEach(function(x){x.classList.remove('on');});
+  document.querySelectorAll('[data-pane="'+p+'"]').forEach(function(x){x.classList.add('on');});
+  document.getElementById('pane-'+p).classList.add('on');
+  if(p==='history') renderHistory();
+}
+document.getElementById('tabs').addEventListener('click',function(e){
+  if(e.target.dataset.pane) switchPane(e.target.dataset.pane);
+});
+document.getElementById('bnav').addEventListener('click',function(e){
+  var it=e.target.closest('.bnav-item');
+  if(it&&it.dataset.pane) switchPane(it.dataset.pane);
+});
+
+// ── GAS保存 ──
+function saveToGAS(rec){
+  fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)}).catch(function(){});
+}
+
+// ── CHECKLIST ──
+var CL={
+  'cl-ext':{pb:'pb-ext',pl:'pl-ext',items:['看板・サインの汚れ・破損・照明確認（視認性良好）','駐車場ライン・清掃状態（10台以上確保）','展示車両の洗車状態・価格表示（3台以上）','カーセブンのぼり設置・状態（汚れ・破れ・傾きなし）','LED看板が営業時間中に点灯しているか','店舗周辺のゴミ・雑草・落ち葉の除去完了']},
+  'cl-web':{pb:'pb-web',pl:'pl-web',items:['全在庫車両の掲載完了（買取後24時間以内）','各車両15枚以上の写真掲載・鮮明度確認','コメント200文字以上・魅力的な内容','写真の季節適合性（エアコン設定・服装等）確認','車検・点検ステッカーの期限・状態確認']},
+  'cl-ans':{pb:'pb-ans',pl:'pl-ans',items:['全査定で安心宣言説明を実施しているか確認','4大トラブル・JPUC説明の内容が正確か','5つの約束（前払い・減額なし・名義変更・7日キャンセル・キャンセル料なし）を正しく説明','JPUC認定証が顧客から見える位置に掲示','査定同行またはロールプレイングで習熟度確認']}
+};
+Object.keys(CL).forEach(function(lid){
+  var cfg=CL[lid],wrap=document.getElementById(lid);
+  cfg.items.forEach(function(text,i){
+    var lbl=document.createElement('label');lbl.className='ci';
+    var cb=document.createElement('input');cb.type='checkbox';cb.id=lid+'_'+i;
+    var sp=document.createElement('span');sp.textContent=text;
+    lbl.appendChild(cb);lbl.appendChild(sp);
+    cb.addEventListener('change',function(){updateCL(lid);});
+    wrap.appendChild(lbl);
+  });
+});
+function updateCL(lid){
+  var cfg=CL[lid],done=0;
+  cfg.items.forEach(function(_,i){
+    var cb=document.getElementById(lid+'_'+i),row=cb&&cb.parentElement;
+    if(cb&&cb.checked){done++;row&&row.classList.add('done');}else row&&row.classList.remove('done');
+  });
+  var pct=Math.round(done/cfg.items.length*100);
+  document.getElementById(cfg.pb).style.width=pct+'%';
+  document.getElementById(cfg.pl).textContent=done+' / '+cfg.items.length+' 完了';
+  updateCKSummary();
+}
+function updateCKSummary(){
+  var tot=0,done=0;
+  Object.keys(CL).forEach(function(lid){
+    tot+=CL[lid].items.length;
+    CL[lid].items.forEach(function(_,i){var cb=document.getElementById(lid+'_'+i);if(cb&&cb.checked)done++;});
+  });
+  var pct=Math.round(done/tot*100);
+  var cls=pct===100?'bok':pct>=60?'bneu':'bwarn';
+  var lbl=pct===100?'完了':pct>=60?'進行中':'要対応';
+  document.getElementById('cksummary').innerHTML='総合進捗: '+done+' / '+tot+' ('+pct+'%) <span class="badge '+cls+'">'+lbl+'</span>';
+}
+updateCKSummary();
+function getCLScores(){
+  var out={};
+  Object.keys(CL).forEach(function(lid){
+    var key=lid.replace('cl-',''),done=0,items=[];
+    CL[lid].items.forEach(function(t,i){var cb=document.getElementById(lid+'_'+i);if(cb&&cb.checked){done++;items.push(t);}});
+    out[key]={done:done,total:CL[lid].items.length,items:items};
+  });
+  return out;
+}
+function setCLFromData(data){
+  Object.keys(CL).forEach(function(lid){
+    var key=lid.replace('cl-','');
+    var checked=(data[key]&&data[key].items)?data[key].items:[];
+    CL[lid].items.forEach(function(t,i){var cb=document.getElementById(lid+'_'+i);if(cb)cb.checked=checked.indexOf(t)>=0;});
+    updateCL(lid);
+  });
+}
+
+// ── HISTORY ──
+var _did=null;
+document.getElementById('h_savebtn').addEventListener('click',saveRecord);
+document.getElementById('h_search').addEventListener('input',renderHistory);
+document.getElementById('h_sort').addEventListener('change',renderHistory);
+document.getElementById('h_xbtn').addEventListener('click',closeDetail);
+document.getElementById('h_loadbtn').addEventListener('click',loadToChecklist);
+document.getElementById('h_delbtn').addEventListener('click',function(){deleteRecord(_did);});
+
+async function saveRecord(){
+  var name=document.getElementById('h_store').value.trim();
+  if(!name){alert('店舗名を入力してください');return;}
+  var sc=getCLScores(),now=new Date();
+  var ds=now.getFullYear()+'/'+(now.getMonth()+1+'').padStart(2,'0')+'/'+(''+now.getDate()).padStart(2,'0');
+  var id='visit:'+now.getTime();
+  var rec={id:id,store:name,date:ds,ts:now.getTime(),ext:sc.ext,web:sc.web,ans:sc.ans,total:sc.ext.done+sc.web.done+sc.ans.done,max:16};
+  try{
+    await window.storage.set(id,JSON.stringify(rec));
+    saveToGAS(rec);
+    document.getElementById('h_store').value='';
+    setTimeout(renderHistory,300);
+  }catch(e){alert('保存エラー: '+e.message);}
+}
+async function loadAll(){
+  try{
+    var res=await window.storage.list('visit:');
+    if(!res||!res.keys||!res.keys.length)return[];
+    var recs=[];
+    for(var i=0;i<res.keys.length;i++){
+      try{var r=await window.storage.get(res.keys[i]);if(r&&r.value)recs.push(JSON.parse(r.value));}catch(e){}
+    }
+    return recs;
+  }catch(e){return[];}
+}
+function pillCls(d,t){var p=d/t*100;return p>=80?'g':p>=60?'m':'r';}
+async function renderHistory(){
+  var list=document.getElementById('h_list'),stats=document.getElementById('h_stats');
+  list.innerHTML='<div class="dempty">読み込み中...</div>';
+  var all=await loadAll();
+  var stores={};all.forEach(function(r){stores[r.store]=(stores[r.store]||0)+1;});
+  var avg=all.length?Math.round(all.reduce(function(s,r){return s+r.total/r.max*100;},0)/all.length):0;
+  stats.innerHTML='<div class="mcard"><div class="mlabel">総記録数</div><div class="mval">'+all.length+'</div></div>'
+    +'<div class="mcard"><div class="mlabel">店舗数</div><div class="mval">'+Object.keys(stores).length+'</div></div>'
+    +'<div class="mcard"><div class="mlabel">平均スコア</div><div class="mval">'+avg+'%</div></div>';
+  var q=document.getElementById('h_search').value.trim().toLowerCase();
+  var recs=q?all.filter(function(r){return r.store.toLowerCase().indexOf(q)>=0;}):all.slice();
+  var sort=document.getElementById('h_sort').value;
+  recs.sort(function(a,b){
+    if(sort==='new')return b.ts-a.ts;if(sort==='old')return a.ts-b.ts;
+    if(sort==='shi')return(b.total/b.max)-(a.total/a.max);if(sort==='slo')return(a.total/a.max)-(b.total/b.max);
+    if(sort==='abc')return a.store.localeCompare(b.store,'ja');return b.ts-a.ts;
+  });
+  if(!recs.length){list.innerHTML='<div class="dempty">記録がありません。</div>';return;}
+  list.innerHTML='';
+  recs.forEach(function(r){
+    var tp=Math.round(r.total/r.max*100);
+    var card=document.createElement('div');card.className='hcard';
+    card.innerHTML='<div class="hcard-top"><div class="hcard-name">'+r.store+'</div><div class="hcard-date">'+r.date+'</div></div>'
+      +'<div class="pills"><span class="pill '+pillCls(r.ext.done,6)+'">外観 '+r.ext.done+'/6</span>'
+      +'<span class="pill '+pillCls(r.web.done,5)+'">WEB '+r.web.done+'/5</span>'
+      +'<span class="pill '+pillCls(r.ans.done,5)+'">安心宣言 '+r.ans.done+'/5</span></div>'
+      +'<div class="hcard-foot"><span class="hcard-total">総合 '+tp+'%</span><button class="obtn">詳細</button></div>';
+    (function(rid){
+      card.querySelector('.obtn').addEventListener('click',function(e){e.stopPropagation();openDetail(rid);});
+      card.addEventListener('click',function(){openDetail(rid);});
+    })(r.id);
+    list.appendChild(card);
+  });
+}
+async function openDetail(id){
+  _did=id;
+  try{
+    var res=await window.storage.get(id);if(!res||!res.value)return;
+    var r=JSON.parse(res.value);
+    document.getElementById('h_dtitle').textContent=r.store+'　'+r.date;
+    var ep=Math.round(r.ext.done/6*100),wp=Math.round(r.web.done/5*100),ap=Math.round(r.ans.done/5*100),tp=Math.round(r.total/r.max*100);
+    function col(p){return p>=80?'#065f46':p>=60?'#92400e':'#991b1b';}
+    function ilist(arr){return(!arr||!arr.length)?'<span style="color:#9ca3af">なし</span>':arr.map(function(t){return '<div>✓ '+t+'</div>';}).join('');}
+    document.getElementById('h_dbody').innerHTML=
+      '<div class="dgrid">'
+      +'<div class="dcell"><div class="dcell-lbl">店舗外観（/6）</div><div class="dcell-val" style="color:'+col(ep)+'">'+r.ext.done+' 点 ('+ep+'%)</div></div>'
+      +'<div class="dcell"><div class="dcell-lbl">WEB掲載（/5）</div><div class="dcell-val" style="color:'+col(wp)+'">'+r.web.done+' 点 ('+wp+'%)</div></div>'
+      +'<div class="dcell"><div class="dcell-lbl">安心宣言（/5）</div><div class="dcell-val" style="color:'+col(ap)+'">'+r.ans.done+' 点 ('+ap+'%)</div></div>'
+      +'<div class="dcell"><div class="dcell-lbl">総合（/16）</div><div class="dcell-val" style="color:'+col(tp)+'">'+r.total+' 点 ('+tp+'%)</div></div></div>'
+      +'<div class="dlabel">店舗外観 ✓</div><div class="dtext">'+ilist(r.ext.items)+'</div>'
+      +'<div class="dlabel">WEB掲載 ✓</div><div class="dtext">'+ilist(r.web.items)+'</div>'
+      +'<div class="dlabel">安心宣言 ✓</div><div class="dtext">'+ilist(r.ans.items)+'</div>';
+    var panel=document.getElementById('h_detail');panel.classList.add('on');
+    setTimeout(function(){panel.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+  }catch(e){alert('読み込みエラー: '+e.message);}
+}
+function closeDetail(){document.getElementById('h_detail').classList.remove('on');_did=null;}
+async function deleteRecord(id){
+  if(!id||!confirm('この記録を削除しますか？'))return;
+  try{await window.storage.delete(id);closeDetail();renderHistory();}catch(e){alert('削除エラー: '+e.message);}
+}
+function loadToChecklist(){
+  if(!_did)return;
+  window.storage.get(_did).then(function(res){
+    if(!res||!res.value)return;
+    var r=JSON.parse(res.value);
+    setCLFromData({ext:r.ext,web:r.web,ans:r.ans});
+    closeDetail();switchPane('check');
+  });
+}
+if(window.storage)renderHistory();
+
+// share button
+var shareBtn=document.createElement('button');shareBtn.className='share-btn';shareBtn.innerHTML='🔗 履歴データをエクスポート（JSON）';
+shareBtn.addEventListener('click',async function(){
+  var all=await loadAll();if(!all.length){alert('記録がありません');return;}
+  var json=JSON.stringify({export_date:new Date().toISOString(),records:all},null,2);
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download='car7sv_history_'+new Date().toISOString().split('T')[0]+'.json';a.click();
+});
+document.getElementById('pane-history').insertBefore(shareBtn,document.getElementById('h_detail'));
+
+// ── REPORT ──
+document.getElementById('r_date').value=new Date().toISOString().split('T')[0];
+document.getElementById('r_synccl').addEventListener('click',function(){
+  var sc=getCLScores();
+  document.getElementById('r_ext').value=sc.ext.done;
+  document.getElementById('r_web').value=sc.web.done;
+  document.getElementById('r_ans').value=sc.ans.done;
+});
+document.getElementById('r_genbtn').addEventListener('click',function(){
+  var store=encodeURIComponent(document.getElementById('r_store').value||'');
+  var sv=encodeURIComponent(document.getElementById('r_sv').value||'');
+  var dt=encodeURIComponent(document.getElementById('r_date').value||'');
+  var ext=document.getElementById('r_ext').value||'0';
+  var web=document.getElementById('r_web').value||'0';
+  var ans=document.getElementById('r_ans').value||'0';
+  var url=GAS_URL+'?page=report&store='+store+'&sv='+sv+'&date='+dt+'&ext='+ext+'&web='+web+'&ans='+ans;
+  var st=document.getElementById('r_stat');
+  st.innerHTML='下のボタンから報告書フォームを開いてください：<br><br>'
+    +'<a href="'+url+'" target="_blank" style="display:inline-block;padding:10px 20px;background:#1a2340;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">📋 報告書フォームを開く</a>';
+  st.className='rstat ok';
+});
+
+// ── AI CHAT ──
+var KB={
+  a:'安心宣言の5つのポイント：\n①ご契約金の半額は当日中に前払い（上限50万円）\n②いかなる場合でも契約後の減額は一切なし\n③買取車両は当社名義に変更手続き\n④キャンセルは7日間、電話一本で可能\n⑤契約後でもキャンセル料は一切なし',
+  b:'アポ率低下の原因と改善策：\n1.初回連絡が遅い → 受信後30分以内\n2.時間帯が合わない → 朝夕・土日に変更\n3.話法が弱い → ロールプレイング実施\n4.フォロー不足 → 8次対応プロセスの仕組み化\n標準アポ率：24.0%',
+  c:'8次対応（1次）の標準話法：\n「○○様でいらっしゃいますか？カーセブン△△店の□□と申します。この度は車の査定についてお問い合わせをいただき、ありがとうございます。お忙しい中恐れ入りますが、お車の無料査定をさせていただきたく、お電話いたしました。○○様のご都合の良い日時はいつ頃でしょうか？」',
+  d:'価格重視型顧客へのクロージング：\n「確かに金額は重要ですが、一番大切なのは『安心して取引できる』ことではないでしょうか。仮に他社様で数万円高くても、後から減額されたり支払いが遅れては意味がございません。カーセブンの金額は契約後絶対に変わらず、半額は当日中にお支払いします。」',
+  e:'口コミ獲得の標準話法：\n「○○様、本日はカーセブンをお選びいただき、ありがとうございました。もしよろしければ、GoogleマップでカーセブンOO店の口コミをお書きいただけると大変嬉しいです。」\n目標獲得率：成約数の35%以上。全件24時間以内回答が必須です。',
+  f:'新人スタッフ第1週目プログラム：\n【実施項目】\n・会社理念「正々堂々と、生きる。」の理解\n・基本接客マナー研修\n・店舗設備・システム操作方法\n・車両基礎知識\n【到達目標】\n・基本的な来客対応ができる\n・安心宣言5つのポイントを暗唱できる',
+  g:'中古車流通の仕組み：\n消費者→買取店/ディーラー→AA（オートオークション）→販売店→消費者\n発生源（推定750万台/年）：新車代替50%・中古代替30%・売却20%\nカーセブンの強み：中間業者を省いた直接買取・販売の仕組みです。',
+  h:'相場と価格：\n■買取相場：AA落札価格基準\n■価格下落率：月当たり1.5〜3.0%\n■季節要因：ボーナス商戦・長期連休はオークション休催で高買い発生。年末・年度末は出品増で相場低調。',
+  i:'古物営業許可：\n①都道府県公安委員会の許可が必須\n②法人は約2ヶ月かかるため早期手続きを\n③申請先：営業所管轄の警察署防犯係\n④複数都道府県は各都道府県で許可が必要\n⑤手数料：新規19,000円',
+  j:'クリンリネスの基本：\n繁盛店の基本は掃除が行き届いていること。\n「こういう店から買いたくない」理由トップ3：\n①接客応対の悪さ　②的確な情報が得られない　③クリンリネスの不徹底',
+  k:'各エリアのクリンリネス：\n■店舗周辺：入口から1ブロック以内のゴミ除去\n■展示スペース：のぼり旗確認。展示車のワックス・シートカバー確認\n■接客スペース：商談テーブル整理。雑誌は最新号に差し替え',
+  l:'トイレのクリンリネス（1日最低3回）：\n①床・壁・便器の清潔さ　②ペーパータオル・石鹸補充　③汚物入れ確認　④洗面所・鏡の清潔さ　⑤換気　⑥花の設置',
+  m:'セールスの基本姿勢：\nカーセブンはお客様のニーズを的確に把握し、最適な価値提供をすることが営業の最重要業務です。\n■買取・販売は価格競争ではなくサービス競争で行う\n■顧客満足を追求し、末永い取引関係を構築する\n■押し付け・強引なセールスはチェーン全体で禁止',
+  n:'購買心理の7段階：\n第1段階【注意】→第2段階【興味】→第3段階【連想】→第4段階【欲望】→第5段階【比較】→第6段階【確信】→第7段階【行動】\nポイント：低い段階から一つずつクリアしていく。まずお客様に知っていただくことが重要。',
+  o:'クロージングの8つの方法：\n①立証法：実績・お客様名を挙げて安心感を与える\n②仮定法：売却前提で話を進める\n③誘導法：有利な申入れで迷いを解消\n④選択法（二者択一）：些細な点で意思決定してもらう\n⑤行動法：注文書を出すなど動作で示す\n⑥総括法：興味を示した点を繰り返す\n⑦質問法：「他に何か洩れていることはございますか？」\n⑧依頼法：「是非とも私にお任せいただけないでしょうか？」',
+  p:'ファーストコンタクトの基本：\n■来店されたらすぐ走って近寄り「いらっしゃいませ」と1〜2m離れてご挨拶\n■第一印象は7秒で決まる\n■①誠実 ②熱意 ③創意工夫が好印象の3要素\n■「ご売却ですか？」「お乗換えですか？」と笑顔で語りかける',
+  q:'顧客ターゲティング（3分類）：\n①ネクストカー買取査定依頼顧客（代替え顧客）\n②世帯内未取引顧客（複数所有顧客）\n③減車・ネクストカー納車済み顧客（減車顧客）\n→①②は継続取引顧客候補のため来店誘致に注力\n→①代替は「納車済み」「契約済み」「口約束」「検討中」の4つにさらに分類',
+  r:'アポ率向上の2大ポイント：\n①初期対応スピード（できる限り早く連絡）\n②商談パターン通りの電話頻度（配信当日〜1ヶ月で延べ8回）\n電話のルール：繋がるまで1日最低3回チャレンジ\n概算メール：依頼当日に概算価格をメールで送信（他社との差別化）\n優先案件：サンキューメール・アンケート回答者は成約率が通常の2倍以上',
+  s:'自社買取販売の仕組み：\n総査定数の約30%が代替え検討中（他店未契約）のお客様\n→このお客様への販売提案が収益最大化の鍵\n案内話法：「買取をきっかけにお乗換えの方には特典をご用意しています。今回はお乗換えですか？」\n指標：査定→代替確認60%→特典説明100%→ニーズ確認100%→車種特定70%→見積100%→販売成約20%',
+  t:'デイリー業務の流れ：\n【オープン準備】出勤確認・清掃・車両点検・のぼり確認・朝礼（発声練習・実績確認・目標設定）\n【日中業務】CORE新着チェック・メール返信・展示車洗車・書類確認・名義変更\n【閉店業務】日報記入・COREシステム登録・戸締り・LEDサイン点灯確認',
+  u:'インターネット顧客動向：\n・査定申込後14日以内に7割以上が成約\n・1ヶ月以内に9割が成約\n・土日の成約率が基準5%ラインを上回る\n・昼食時・午後・夜の成約率が高い\n→素早い対応とスピーディーな商談が必須',
+  v:'諸費用基本一覧：\n■検査登録代行手数料：28,000円\n■車庫証明代行：普通・小型15,000円／軽10,000円\n■納車費用（近距離）：8,000円（5km目安）\n■2023年10月より総額表示義務化\nワンプライス販売：「最初からベストの価格を提示。値引き交渉はしません」とお客様に説明',
+  w:'機会損出算定：\n①管理顧客数　②年間車検台数　③年間自社販売台数　④車検粗利単価　⑤販売粗利単価\n指標：入庫率65%・代替率15%\n整備連携フロー：受付時「次の車検は通しますか？」→車検意向あり：次回仮予約（指標75%）→代替反応：Sシート提示＋乗換提案'
+};
+function kbLookup(q){
+  if(q.indexOf('安心宣言')>=0||q.indexOf('5つ')>=0)return KB.a;
+  if(q.indexOf('アポ')>=0)return KB.b;
+  if(q.indexOf('8次')>=0||q.indexOf('話法')>=0)return KB.c;
+  if(q.indexOf('クロージング')>=0&&(q.indexOf('価格')>=0||q.indexOf('重視')>=0))return KB.d;
+  if(q.indexOf('口コミ')>=0||q.indexOf('GBP')>=0)return KB.e;
+  if(q.indexOf('新人')>=0||q.indexOf('育成')>=0)return KB.f;
+  if(q.indexOf('流通')>=0||q.indexOf('オークション')>=0)return KB.g;
+  if(q.indexOf('相場')>=0||q.indexOf('下落')>=0)return KB.h;
+  if(q.indexOf('古物')>=0||q.indexOf('許可')>=0)return KB.i;
+  if(q.indexOf('クリンリネス')>=0||q.indexOf('清掃')>=0)return KB.j;
+  if(q.indexOf('展示')>=0||q.indexOf('のぼり')>=0)return KB.k;
+  if(q.indexOf('トイレ')>=0||q.indexOf('洗面')>=0)return KB.l;
+  if(q.indexOf('セールス姿勢')>=0||q.indexOf('基本姿勢')>=0)return KB.m;
+  if(q.indexOf('購買心理')>=0||q.indexOf('7段階')>=0)return KB.n;
+  if(q.indexOf('クロージング')>=0)return KB.o;
+  if(q.indexOf('ファースト')>=0||q.indexOf('第一印象')>=0)return KB.p;
+  if(q.indexOf('ターゲティング')>=0||q.indexOf('3分類')>=0)return KB.q;
+  if(q.indexOf('アポ率')>=0||q.indexOf('概算メール')>=0)return KB.r;
+  if(q.indexOf('買取販売')>=0||q.indexOf('自社買取')>=0||q.indexOf('30%')>=0)return KB.s;
+  if(q.indexOf('デイリー')>=0||q.indexOf('朝礼')>=0||q.indexOf('開店')>=0)return KB.t;
+  if(q.indexOf('ユーザー動向')>=0||q.indexOf('成約率')>=0||q.indexOf('14日')>=0)return KB.u;
+  if(q.indexOf('諸費用')>=0||q.indexOf('ワンプライス')>=0||q.indexOf('総額表示')>=0)return KB.v;
+  if(q.indexOf('機会損出')>=0||q.indexOf('整備')>=0||q.indexOf('車検')>=0)return KB.w;
+  return null;
+}
+var QLIST=[
+  ['安心宣言5ポイント','安心宣言の5つのポイントを教えて'],
+  ['アポ率改善','アポ率が低い原因と改善策は？'],
+  ['8次対応話法','8次対応プロセスの1次対応話法を教えて'],
+  ['クロージング8手法','クロージングの8つの方法を教えて'],
+  ['口コミ獲得','GBP口コミ獲得の標準話法を教えて'],
+  ['新人指導','新人スタッフの第1週目指導プログラムは？'],
+  ['中古車流通','中古車流通の仕組みをわかりやすく教えて'],
+  ['購買心理7段階','購買心理の7段階とは？'],
+  ['ファーストコンタクト','来店時のファーストコンタクトの基本を教えて'],
+  ['顧客ターゲティング','買取顧客の3分類を教えて'],
+  ['アポ率・商談パターン','アポ率向上と商談パターンの設定を教えて'],
+  ['自社買取販売','自社買取販売の仕組みと指標を教えて'],
+  ['クリンリネス基本','クリンリネスの基本的な考え方を教えて'],
+  ['トイレ管理','トイレのクリンリネスチェックポイントは？'],
+  ['デイリー業務','店舗のデイリー業務の流れを教えて'],
+  ['ユーザー動向','査定申込後のユーザー動向データを教えて'],
+  ['諸費用・ワンプライス','販売諸費用とワンプライス販売を教えて'],
+  ['機会損出・整備連携','機会損出算定と整備部門連携を教えて'],
+  ['古物商許可','古物商許可の取得手順を教えて'],
+  ['相場・価格','中古車相場と価格変動の仕組みは？'],
+];
+var qbtns=document.getElementById('qbtns');
+QLIST.forEach(function(q){
+  var b=document.createElement('button');b.className='qbtn';b.textContent=q[0];
+  b.addEventListener('click',function(){askChat(q[1]);});
+  qbtns.appendChild(b);
+});
+function addMsg(role,text){
+  var wrap=document.getElementById('msgs');
+  var d=document.createElement('div');d.className='msg '+role;
+  var s=document.createElement('div');s.className='msender';s.textContent=role==='u'?'あなた':'SV-Assist AI';
+  var bbl=document.createElement('div');bbl.className='bubble';
+  d.appendChild(s);d.appendChild(bbl);wrap.appendChild(d);
+  wrap.scrollTop=wrap.scrollHeight;return bbl;
+}
+function askChat(q){document.getElementById('cinput').value=q;sendChat();}
+async function sendChat(){
+  var inp=document.getElementById('cinput'),q=inp.value.trim();if(!q)return;
+  inp.value='';addMsg('u',q);
+  var bubble=addMsg('b','');
+  bubble.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';
+  var local=kbLookup(q);
+  await new Promise(function(r){setTimeout(r,500+Math.random()*400);});
+  try{
+    var sys='あなたはカーセブンのスーパーバイザー支援AIです。SVマニュアル・買取業務編・店舗運営編・営業施策編・インターネット顧客対応編・セールス基本編の知識を持ちます。日本語で実践的かつ具体的に、300字以内で簡潔に答えてください。';
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:sys,messages:[{role:'user',content:q}]})
+    });
+    var data=await res.json();
+    bubble.textContent=(data.content&&data.content[0])?data.content[0].text:(local||'マニュアルを確認してください。');
+  }catch(e){bubble.textContent=local||'ネットワークエラーが発生しました。';}
+}
+document.getElementById('cinput').addEventListener('keydown',function(e){if(e.key==='Enter')sendChat();});
+document.getElementById('csend').addEventListener('click',sendChat);
+
+})();
+</script>
+</body>
+</html>
